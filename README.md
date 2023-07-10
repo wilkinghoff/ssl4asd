@@ -1,1 +1,1 @@
-# ssl4asd
+# Self-Supervised Learning for Anomalous Sound Detection
