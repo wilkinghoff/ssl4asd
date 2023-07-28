@@ -137,15 +137,15 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     x = tf.keras.layers.Conv1D(128, 256, strides=64, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
-    #x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
+    x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
     x = tf.keras.layers.Conv1D(128, 64, strides=32, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
-    #x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
+    x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
     x = tf.keras.layers.Conv1D(128, 16, strides=4, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
-    #x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
+    x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
 
     x = tf.keras.layers.Flatten()(x)
     x = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
@@ -168,27 +168,6 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     x = tf.keras.layers.Reshape((raw_dim,))(x_mix)
     x = MagnitudeSpectrogram(16000, 1024, 512, f_max=8000, f_min=200)(x)
 
-    #x = tf.keras.layers.Reshape((561, 513))(x)
-    #x = tf.keras.layers.Permute((2,1))(x)
-    #x_spec = x
-    # try permuting them layers
-    #query = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #value = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #key = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #query = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=-1))(query)
-    #key = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=-1))(key)
-    #x = tf.keras.layers.Multiply()([query,key])
-    #x = tf.keras.layers.Lambda(lambda x: tf.math.reduce_sum(x, axis=-1, keepdims=True))(x)
-    #x = tf.keras.layers.BatchNormalization()(x)
-    #x = tf.keras.layers.Lambda(lambda x: tf.nn.softmax(x, axis=1))(x)
-    #x = tf.keras.layers.Multiply()([x,x_spec])
-
-    #x = tf.keras.layers.Permute((2,1))(x)
-    #x = tf.keras.layers.Reshape((561, 513, 1))(x)
-
-    #x_mean = tf.keras.layers.Lambda(lambda x: tf.math.reduce_mean(x[:,:,:,0], axis=1))(x)
-    #x_max = tf.keras.layers.Lambda(lambda x: tf.math.reduce_max(x[:,:,:,0], axis=1))(x)
-
     x = tf.keras.layers.Lambda(lambda x: x-tf.math.reduce_mean(x, axis=1, keepdims=True))(x) # CMN-like normalization
     x = tf.keras.layers.BatchNormalization(axis=-2)(x)
 
@@ -205,7 +184,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=16)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=16)(xr)
     x = tf.keras.layers.Add()([x, xr])
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(x)
@@ -213,7 +192,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=16)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=16)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     # third block
@@ -224,7 +203,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=32)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=32)(xr)
     x = tf.keras.layers.MaxPooling2D((2, 2), padding='same')(x)
     x = tf.keras.layers.Conv2D(kernel_size=1, filters=32, strides=1, padding="same",
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
@@ -235,7 +214,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=32)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=32)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     # fourth block
@@ -246,7 +225,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=64)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=64)(xr)
     x = tf.keras.layers.MaxPooling2D((2, 2), padding='same')(x)
     x = tf.keras.layers.Conv2D(kernel_size=1, filters=64, strides=1, padding="same",
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
@@ -257,7 +236,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=64)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=64)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     # fifth block
@@ -268,7 +247,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=128)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=128)(xr)
     x = tf.keras.layers.MaxPooling2D((2, 2), padding='same')(x)
     x = tf.keras.layers.Conv2D(kernel_size=1, filters=128, strides=1, padding="same",
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
@@ -279,7 +258,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
-    #xr = SqueezeAndExcitationBlock(num_channels=128)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=128)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     x = tf.keras.layers.MaxPooling2D((18, 1), padding='same')(x)
@@ -522,7 +501,7 @@ for k_ensemble in np.arange(ensemble_size):
         print('ensemble iteration: ' + str(k_ensemble+1))
         print('aeon: ' + str(k+1))
         # fit model
-        weight_path = 'wts_' + str(k+1) + 'k_' + str(target_sr) + '_' + str(k_ensemble+1) + '_ssl_new_no_se.h5'
+        weight_path = 'wts_' + str(k+1) + 'k_' + str(target_sr) + '_' + str(k_ensemble+1) + '_ssl_new_se.h5'
         if not os.path.isfile(weight_path):
             model.fit(
                 [train_raw, y_train_cat_4train], [y_train_cat_4train,y_train_cat_4train], verbose=1,
@@ -566,11 +545,11 @@ for k_ensemble in np.arange(ensemble_size):
             train_cos = np.minimum(train_cos, np.min(1-np.dot(x_train_ln[train_labels==lab], means_source_ln.transpose()), axis=-1, keepdims=True))
 
             if np.sum(eval_labels == lab) > 0:
-                pred_eval[eval_labels == lab, j] += np.min(eval_cos, axis=-1)
-                pred_unknown[unknown_labels == lab, j] += np.min(unknown_cos, axis=-1)
+                pred_eval[eval_labels == lab, j] = np.min(eval_cos, axis=-1)
+                pred_unknown[unknown_labels == lab, j] = np.min(unknown_cos, axis=-1)
             if np.sum(test_labels == lab) > 0:
-                pred_test[test_labels == lab, j] += np.min(test_cos, axis=-1)
-            pred_train[train_labels == lab, j] += np.min(train_cos, axis=-1)
+                pred_test[test_labels == lab, j] = np.min(test_cos, axis=-1)
+            pred_train[train_labels == lab, j] = np.min(train_cos, axis=-1)
         print('#######################################################################################################')
         print('DEVELOPMENT SET')
         print('#######################################################################################################')
