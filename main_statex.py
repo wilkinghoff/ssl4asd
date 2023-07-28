@@ -24,6 +24,40 @@ from sklearn.utils import class_weight
 from statex_aug_layer_classwise import StatExLayer
 
 
+class SqueezeAndExcitationBlock(tf.keras.layers.Layer):
+    def __init__(self, num_channels, ratio=16, dimension=2, **kwargs):
+        super(SqueezeAndExcitationBlock, self).__init__(**kwargs)
+        self.num_channels = num_channels
+        self.ratio = ratio
+        self.dimension = dimension
+        if self.dimension==2:
+            self.L1 = tf.keras.layers.GlobalAveragePooling2D()
+        elif self.dimension == 1:
+            self.L1 = tf.keras.layers.GlobalAveragePooling1D()
+        self.L2 = tf.keras.layers.Dense(self.num_channels//self.ratio, activation='relu', use_bias=False)
+        self.L3 = tf.keras.layers.Dense(self.num_channels, activation='sigmoid', use_bias=False)
+        self.L4 = tf.keras.layers.Multiply()
+
+
+    def build(self, input_shape):
+        super(SqueezeAndExcitationBlock, self).build(input_shape)
+
+    def call(self, inputs):
+        x = self.L1(inputs)
+        x = self.L2(x)
+        x = self.L3(x)
+        return self.L4([inputs, x])
+
+    def get_config(self):
+        config = {
+            'num_channels': self.num_channels,
+            'ratio': self.ratio,
+            'dimension': self.dimension
+        }
+        config.update(super(SqueezeAndExcitationBlock, self).get_config())
+        return config
+
+
 def adjust_size(wav, new_size):
     reps = int(np.ceil(new_size/wav.shape[0]))
     offset = np.random.randint(low=0, high=int(reps*wav.shape[0]-new_size+1))
@@ -103,12 +137,15 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     x = tf.keras.layers.Conv1D(128, 256, strides=64, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
+    x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
     x = tf.keras.layers.Conv1D(128, 64, strides=32, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
+    x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
     x = tf.keras.layers.Conv1D(128, 16, strides=4, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
+    x = SqueezeAndExcitationBlock(num_channels=128, dimension=1)(x)
 
     x = tf.keras.layers.Flatten()(x)
     x = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
@@ -166,17 +203,23 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
 
     # second block
     xr = tf.keras.layers.ReLU()(x)
-    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=16)(xr)
     x = tf.keras.layers.Add()([x, xr])
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(x)
-    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
-    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=16)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     # third block
@@ -186,17 +229,22 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
                                 kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=32)(xr)
     x = tf.keras.layers.MaxPooling2D((2, 2), padding='same')(x)
     x = tf.keras.layers.Conv2D(kernel_size=1, filters=32, strides=1, padding="same",
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.Add()([x, xr])
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(x)
-    xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(32, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=32)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     # fourth block
@@ -206,17 +254,22 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
                                 kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=64)(xr)
     x = tf.keras.layers.MaxPooling2D((2, 2), padding='same')(x)
     x = tf.keras.layers.Conv2D(kernel_size=1, filters=64, strides=1, padding="same",
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.Add()([x, xr])
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(x)
-    xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(64, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=64)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     # fifth block
@@ -226,23 +279,28 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
                                 kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=128)(xr)
     x = tf.keras.layers.MaxPooling2D((2, 2), padding='same')(x)
     x = tf.keras.layers.Conv2D(kernel_size=1, filters=128, strides=1, padding="same",
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.Add()([x, xr])
     x = tf.keras.layers.BatchNormalization()(x)
     xr = tf.keras.layers.ReLU()(x)
-    xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
     xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
-    xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(xr)
+    xr = tf.keras.layers.Conv2D(128, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
+                                use_bias=use_bias)(xr)
+    xr = SqueezeAndExcitationBlock(num_channels=128)(xr)
     x = tf.keras.layers.Add()([x, xr])
 
     x = tf.keras.layers.MaxPooling2D((18, 1), padding='same')(x)
     x = tf.keras.layers.Flatten(name='flat')(x)
     x = tf.keras.layers.BatchNormalization()(x)
-    #x = tf.keras.layers.Dropout(0.5)(x)
+    # x = tf.keras.layers.Dropout(0.5)(x)
     emb_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='emb_mel', use_bias=use_bias)(x)
 
     #mean_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='max_mel', use_bias=use_bias)(x_max)
@@ -490,7 +548,7 @@ for k_ensemble in np.arange(ensemble_size):
             model = tf.keras.models.load_model(weight_path,
                                                custom_objects={'MixupLayer': MixupLayer, 'mixupLoss': mixupLoss,
                                                                'SCAdaCos': SCAdaCos,
-                                                               'MagnitudeSpectrogram': MagnitudeSpectrogram, 'AugLayer': AugLayer, 'StatExLayer': StatExLayer})
+                                                               'MagnitudeSpectrogram': MagnitudeSpectrogram, 'AugLayer': AugLayer, 'StatExLayer': StatExLayer, 'SqueezeAndExcitationBlock': SqueezeAndExcitationBlock})
 
         print(model.summary())
         # extract embeddings
