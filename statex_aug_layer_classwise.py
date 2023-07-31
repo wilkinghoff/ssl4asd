@@ -25,7 +25,7 @@ class StatExLayer(layers.Layer):
         X_fex = (X1 - tf.math.reduce_mean(X1, axis=1, keepdims=True)) / (tf.math.reduce_std(X1, axis=1, keepdims=True) + 1e-16) * tf.math.reduce_std(X1_rev, axis=1, keepdims=True) + tf.math.reduce_mean(X1_rev, axis=1, keepdims=True)
 
         # randomly decide on which statistics exchange axis to use
-        dec = tf.dtypes.cast(tf.random.uniform(shape=[tf.shape(inputs[0])[0]]) < 1, tf.dtypes.float32)
+        dec = tf.dtypes.cast(tf.random.uniform(shape=[tf.shape(inputs[0])[0]]) < 0, tf.dtypes.float32)
         dec1 = tf.reshape(dec, [-1] + [1] * (len(inputs[0].shape) - 1))
         X_ex = dec1 * X_fex + (1 - dec1) * X_tex
         #dec2 = tf.reshape(dec, [-1] + [1] * (len(y_new.shape) - 1))

@@ -532,12 +532,12 @@ for k_ensemble in np.arange(ensemble_size):
     data_input, label_input, loss_output, loss_output_ssl = model_emb_cnn(num_classes=num_classes_4train,
                                                              raw_dim=eval_raw.shape[1], n_subclusters=n_subclusters, use_bias=False)
     model = tf.keras.Model(inputs=[data_input, label_input], outputs=[loss_output, loss_output_ssl])
-    model.compile(loss=[mixupLoss, mixupLoss], optimizer=tf.keras.optimizers.Adam() ,loss_weights=[1,1])
+    model.compile(loss=[mixupLoss, mixupLoss], optimizer=tf.keras.optimizers.Adam() ,loss_weights=[0,1])
     for k in np.arange(aeons):
         print('ensemble iteration: ' + str(k_ensemble+1))
         print('aeon: ' + str(k+1))
         # fit model
-        weight_path = 'wts_' + str(k+1) + 'k_' + str(target_sr) + '_' + str(k_ensemble+1) + '_ssl_statex_only_freq.h5'
+        weight_path = 'wts_' + str(k+1) + 'k_' + str(target_sr) + '_' + str(k_ensemble+1) + '_ssl_statex_only_freq_single.h5'
         if not os.path.isfile(weight_path):
             model.fit(
                 [train_raw, y_train_cat_4train], [y_train_cat_4train,y_train_cat_4train], verbose=1,
