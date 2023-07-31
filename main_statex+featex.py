@@ -306,7 +306,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     #mean_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='max_mel', use_bias=use_bias)(x_max)
     #max_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='mean_mel', use_bias=use_bias)(x_mean)
     #emb_mel_ssl, emb_fft_ssl, y_ssl = AugLayer(prob=0.5)([emb_mel, emb_fft])
-    emb_mel_ssl, emb_fft_ssl, y_ssl = AugLayer(prob=0.5)([emb_mel,emb_fft,y_mix])
+    emb_mel_ssl, emb_fft_ssl, y_ssl = AugLayer(prob=0.5)([emb_mel,emb_fft,y])
     # prepare output
     x = tf.keras.layers.Concatenate(axis=-1)([emb_fft, emb_mel])
     x_ssl = tf.keras.layers.Concatenate(axis=-1)([emb_fft_ssl, emb_mel_ssl])
@@ -327,7 +327,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     # x = tf.keras.layers.Lambda(lambda x: x[0]*x[1])([x, w])
     # x_ssl = tf.keras.layers.Lambda(lambda x: x[0]*x[1])([x_ssl, w_ssl])
 
-    output_ssl2 = SCAdaCos(n_classes=num_classes*3, n_subclusters=n_subclusters, trainable=True)([x_ssl, y_ssl, label_input])
+    output_ssl2 = SCAdaCos(n_classes=num_classes*9, n_subclusters=n_subclusters, trainable=True)([x_ssl, y_ssl, label_input])
     output = SCAdaCos(n_classes=num_classes, n_subclusters=n_subclusters, trainable=False)([x, y_mix, label_input])
     #output_ssl2 = SCAdaCos(n_classes=num_classes*2, n_subclusters=n_subclusters, trainable=True)([x_ssl, y_ssl2, label_input])
     output_ssl = SCAdaCos(n_classes=num_classes*3, n_subclusters=n_subclusters, trainable=True)([x, y, label_input])
@@ -532,13 +532,13 @@ for k_ensemble in np.arange(ensemble_size):
     data_input, label_input, loss_output, loss_output_ssl, loss_output_ssl2 = model_emb_cnn(num_classes=num_classes_4train,
                                                              raw_dim=eval_raw.shape[1], n_subclusters=n_subclusters, use_bias=False)
     model = tf.keras.Model(inputs=[data_input, label_input], outputs=[loss_output, loss_output_ssl, loss_output_ssl2])
-    model.compile(loss=[mixupLoss, mixupLoss, mixupLoss], optimizer=tf.keras.optimizers.Adam() ,loss_weights=[1,1,1])
+    model.compile(loss=[mixupLoss, mixupLoss, mixupLoss], optimizer=tf.keras.optimizers.Adam() ,loss_weights=[1,0,1])
     print(model.summary())
     for k in np.arange(aeons):
         print('ensemble iteration: ' + str(k_ensemble+1))
         print('aeon: ' + str(k+1))
         # fit model
-        weight_path = 'wts_' + str(k+1) + 'k_' + str(target_sr) + '_' + str(k_ensemble+1) + '_ssl_statex+featex.h5'
+        weight_path = 'wts_' + str(k+1) + 'k_' + str(target_sr) + '_' + str(k_ensemble+1) + '_ssl_statex+featex_single.h5'
         if not os.path.isfile(weight_path):
             model.fit(
                 [train_raw, y_train_cat_4train], [y_train_cat_4train,y_train_cat_4train,y_train_cat_4train], verbose=1,
@@ -581,11 +581,11 @@ for k_ensemble in np.arange(ensemble_size):
             train_cos = np.minimum(train_cos, np.min(1-np.dot(x_train_ln[train_labels==lab], means_source_ln.transpose()), axis=-1, keepdims=True))
 
             if np.sum(eval_labels == lab) > 0:
-                pred_eval[eval_labels == lab, j] = np.min(eval_cos, axis=-1)
-                pred_unknown[unknown_labels == lab, j] = np.min(unknown_cos, axis=-1)
+                pred_eval[eval_labels == lab, j] += np.min(eval_cos, axis=-1)
+                pred_unknown[unknown_labels == lab, j] += np.min(unknown_cos, axis=-1)
             if np.sum(test_labels == lab) > 0:
-                pred_test[test_labels == lab, j] = np.min(test_cos, axis=-1)
-            pred_train[train_labels == lab, j] = np.min(train_cos, axis=-1)
+                pred_test[test_labels == lab, j] += np.min(test_cos, axis=-1)
+            pred_train[train_labels == lab, j] += np.min(train_cos, axis=-1)
         print('#######################################################################################################')
         print('DEVELOPMENT SET')
         print('#######################################################################################################')
