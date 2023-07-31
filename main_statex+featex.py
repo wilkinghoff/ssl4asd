@@ -552,7 +552,7 @@ for k_ensemble in np.arange(ensemble_size):
                                                                'MagnitudeSpectrogram': MagnitudeSpectrogram, 'AugLayer': AugLayer, 'StatExLayer': StatExLayer, 'SqueezeAndExcitationBlock': SqueezeAndExcitationBlock})
 
         # extract embeddings
-        emb_model = tf.keras.Model(model.input, model.layers[-6].output)
+        emb_model = tf.keras.Model(model.input, model.layers[-8].output)
         eval_embs = emb_model.predict([eval_raw, np.zeros((eval_raw.shape[0], num_classes_4train))], batch_size=batch_size)
         train_embs = emb_model.predict([train_raw, np.zeros((train_raw.shape[0], num_classes_4train))], batch_size=batch_size)
         unknown_embs = emb_model.predict([unknown_raw, np.zeros((unknown_raw.shape[0], num_classes_4train))], batch_size=batch_size)
