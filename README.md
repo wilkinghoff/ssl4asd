@@ -1,8 +1,6 @@
 # Self-Supervised Learning for Anomalous Sound Detection
 
-### Kevin Wilkinghoff
-
-ASD system utilizing supervised and self-supervised learning for acoustic machine condition monitoring. The script is designed to be evaluated with output files of the anomaly detection tasks of the [DCASE Challenge](https://dcase.community/challenge2023/task-first-shot-unsupervised-anomalous-sound-detection-for-machine-condition-monitoring).
+ASD system utilizing supervised and self-supervised learning for acoustic machine condition monitoring for task 2 ["First-Shot Unsupervised Anomalous Sound Detection for Machine Condition Monitoring"](https://dcase.community/challenge2023/task-first-shot-unsupervised-anomalous-sound-detection-for-machine-condition-monitoring) of the DCASE2023 Challenge.
 
 ## Instructions
 
