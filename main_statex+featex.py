@@ -8,11 +8,8 @@ import librosa
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
-#from nomatch_layer import NoMatchLayer
-#from mixup_layer_simu import MixupLayer
 from mixup_layer import MixupLayer
 from openl3_idea_aug_layer_classwise import AugLayer
-#from openl3_idea_aug_layer import AugLayer
 from subcluster_adacos import SCAdaCos
 from scipy.stats import hmean
 from tensorflow.keras import backend as K
@@ -122,18 +119,10 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     l2_weight_decay = tf.keras.regularizers.l2(1e-5)
     x_mix = x
     x_mix, y_mix = MixupLayer(prob=0.5)([x, y])
-    #x_mag, x_fft, y = NoMatchLayer(prob=0.5)([x_mag, x_fft, y])
 
     # FFT
     x = tf.keras.layers.Lambda(lambda x: tf.math.abs(tf.signal.fft(tf.complex(x[:, :, 0], tf.zeros_like(x[:, :, 0])))[:, :int(raw_dim / 2)]))(x_mix)
-    #x = tf.keras.layers.Lambda(lambda x: tf.pad(x[:, :, 0], [[0, 0], [1, raw_dim]]))(x_mix)
-    #x = tf.keras.layers.Lambda(lambda x: tf.math.abs(tf.signal.fft(tf.complex(x, tf.zeros_like(x)))))(x)
-    #x = tf.keras.layers.Lambda(lambda x: tf.math.real(tf.signal.ifft(tf.complex(tf.math.square(x), tf.zeros_like(x)))[:,:int(raw_dim/2)]))(x)
     x = tf.keras.layers.Reshape((-1,1))(x)
-    #x = tf.keras.layers.Lambda(lambda x: tf.pad(x[:,:,0], [[0, 0], [1, raw_dim]]))(x_mix)
-    #x = tf.keras.layers.Lambda(lambda x: tf.nn.conv1d(x[:, tf.newaxis, :], x[:, : , tf.newaxis], stride=1, padding='SAME'))(x)
-    #x = tf.keras.layers.Lambda(lambda x: tfp.stats.auto_correlation(x, axis=1, max_lags=2*raw_dim))(x_mix)
-    #x = tf.keras.layers.Reshape((-1, 1))(x)
     x = tf.keras.layers.Conv1D(128, 256, strides=64, activation='linear', padding='same',
                                kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
     x = tf.keras.layers.ReLU()(x)
@@ -164,32 +153,10 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     emb_fft = tf.keras.layers.Dense(128, name='emb_fft', kernel_regularizer=l2_weight_decay, use_bias=use_bias)(x)
 
     # magnitude
-    #x_mix, y = MixupLayer(prob=0.5)([x_mix, y])
     x = tf.keras.layers.Reshape((raw_dim,))(x_mix)
     x = MagnitudeSpectrogram(16000, 1024, 512, f_max=8000, f_min=200)(x)
 
     x, y = StatExLayer(prob=0.5)([x,y_mix])
-
-    #x = tf.keras.layers.Reshape((561, 513))(x)
-    #x = tf.keras.layers.Permute((2,1))(x)
-    #x_spec = x
-    # try permuting them layers
-    #query = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #value = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #key = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #query = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=-1))(query)
-    #key = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=-1))(key)
-    #x = tf.keras.layers.Multiply()([query,key])
-    #x = tf.keras.layers.Lambda(lambda x: tf.math.reduce_sum(x, axis=-1, keepdims=True))(x)
-    #x = tf.keras.layers.BatchNormalization()(x)
-    #x = tf.keras.layers.Lambda(lambda x: tf.nn.softmax(x, axis=1))(x)
-    #x = tf.keras.layers.Multiply()([x,x_spec])
-
-    #x = tf.keras.layers.Permute((2,1))(x)
-    #x = tf.keras.layers.Reshape((561, 513, 1))(x)
-
-    #x_mean = tf.keras.layers.Lambda(lambda x: tf.math.reduce_mean(x[:,:,:,0], axis=1))(x)
-    #x_max = tf.keras.layers.Lambda(lambda x: tf.math.reduce_max(x[:,:,:,0], axis=1))(x)
 
     x = tf.keras.layers.Lambda(lambda x: x-tf.math.reduce_mean(x, axis=1, keepdims=True))(x) # CMN-like normalization
     x = tf.keras.layers.BatchNormalization(axis=-2)(x)
@@ -300,36 +267,14 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     x = tf.keras.layers.MaxPooling2D((18, 1), padding='same')(x)
     x = tf.keras.layers.Flatten(name='flat')(x)
     x = tf.keras.layers.BatchNormalization()(x)
-    # x = tf.keras.layers.Dropout(0.5)(x)
     emb_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='emb_mel', use_bias=use_bias)(x)
-
-    #mean_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='max_mel', use_bias=use_bias)(x_max)
-    #max_mel = tf.keras.layers.Dense(128, kernel_regularizer=l2_weight_decay, name='mean_mel', use_bias=use_bias)(x_mean)
-    #emb_mel_ssl, emb_fft_ssl, y_ssl = AugLayer(prob=0.5)([emb_mel, emb_fft])
     emb_mel_ssl, emb_fft_ssl, y_ssl = AugLayer(prob=0.5)([emb_mel,emb_fft,y])
     # prepare output
     x = tf.keras.layers.Concatenate(axis=-1)([emb_fft, emb_mel])
     x_ssl = tf.keras.layers.Concatenate(axis=-1)([emb_fft_ssl, emb_mel_ssl])
-    #x = tf.keras.layers.Add()([emb_fft, emb_mel])
-    #x_ssl = tf.keras.layers.Add()([emb_fft_ssl, emb_mel_ssl])
-    #x = tf.keras.layers.BatchNormalization()(x)
-    #query = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #value = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #key = tf.keras.layers.Dense(128, use_bias=use_bias)(x)
-    #query = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=-1))(query)
-    #key = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=-1))(key)
-    #x = tf.keras.layers.Multiply()([query,key])
-    #x = tf.keras.layers.Lambda(lambda x: tf.nn.softmax(x))(x)
-    #x = tf.keras.layers.Multiply()([x,value])
-    #x = tf.keras.layers.Attention()([query, value])
-    # w = tf.keras.layers.Dense(256, activation='softmax')(x)
-    # w_ssl = tf.keras.layers.Dense(256, activation='softmax')(x_ssl)
-    # x = tf.keras.layers.Lambda(lambda x: x[0]*x[1])([x, w])
-    # x_ssl = tf.keras.layers.Lambda(lambda x: x[0]*x[1])([x_ssl, w_ssl])
 
     output_ssl2 = SCAdaCos(n_classes=num_classes*9, n_subclusters=n_subclusters, trainable=True)([x_ssl, y_ssl, label_input])
     output = SCAdaCos(n_classes=num_classes, n_subclusters=n_subclusters, trainable=False)([x, y_mix, label_input])
-    #output_ssl2 = SCAdaCos(n_classes=num_classes*2, n_subclusters=n_subclusters, trainable=True)([x_ssl, y_ssl2, label_input])
     output_ssl = SCAdaCos(n_classes=num_classes*3, n_subclusters=n_subclusters, trainable=True)([x, y, label_input])
     loss_output = tf.keras.layers.Lambda(lambda x: tf.stack(x, axis=-1))([output, y_mix])
     loss_output_ssl = tf.keras.layers.Lambda(lambda x: tf.stack(x, axis=-1))([output_ssl, y])
