@@ -13,6 +13,6 @@ When reusing (parts of) the code, a reference to the following paper would be ap
 @unpublished{wilkinghoff2024ssl,
   author = {Wilkinghoff, Kevin},
   title  = {Self-Supervised Learning for Anomalous Sound Detection},
-  note   = {Accepted for presentation at International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  note   = {Accepted for presentation at International Conference on Acoustics, Speech and Signal Processing (ICASSP), arXiv:2312.09578},
   year   = {2024}
 }
