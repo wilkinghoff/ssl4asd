@@ -172,7 +172,7 @@ def model_emb_cnn(num_classes, raw_dim, n_subclusters, use_bias=False):
     xr = tf.keras.layers.ReLU()(x)
     xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
                                 use_bias=use_bias)(xr)
-    x = tf.keras.layers.BatchNormalization()(x)
+    xr = tf.keras.layers.BatchNormalization()(xr)
     xr = tf.keras.layers.ReLU()(xr)
     xr = tf.keras.layers.Conv2D(16, 3, activation='linear', padding='same', kernel_regularizer=l2_weight_decay,
                                 use_bias=use_bias)(xr)
