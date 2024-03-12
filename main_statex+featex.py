@@ -526,11 +526,11 @@ for k_ensemble in np.arange(ensemble_size):
             train_cos = np.minimum(train_cos, np.min(1-np.dot(x_train_ln[train_labels==lab], means_source_ln.transpose()), axis=-1, keepdims=True))
 
             if np.sum(eval_labels == lab) > 0:
-                pred_eval[eval_labels == lab, j] += np.min(eval_cos, axis=-1)
-                pred_unknown[unknown_labels == lab, j] += np.min(unknown_cos, axis=-1)
+                pred_eval[eval_labels == lab, j] = np.min(eval_cos, axis=-1)  # for ensemble, replace '=' with '+='
+                pred_unknown[unknown_labels == lab, j] = np.min(unknown_cos, axis=-1)  # for ensemble, replace '=' with '+='
             if np.sum(test_labels == lab) > 0:
-                pred_test[test_labels == lab, j] += np.min(test_cos, axis=-1)
-            pred_train[train_labels == lab, j] += np.min(train_cos, axis=-1)
+                pred_test[test_labels == lab, j] = np.min(test_cos, axis=-1)  # for ensemble, replace '=' with '+='
+            pred_train[train_labels == lab, j] = np.min(train_cos, axis=-1)  # for ensemble, replace '=' with '+='
         print('#######################################################################################################')
         print('DEVELOPMENT SET')
         print('#######################################################################################################')
