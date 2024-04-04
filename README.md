@@ -8,11 +8,13 @@ Just start the main.py script for training and evaluation. To run the code, you 
 
 ## Reference
 
-When reusing (parts of) the code, a reference to the following paper would be appreciated:
+Please reference the following paper when reusing (parts of) the code:
 
-@unpublished{wilkinghoff2024ssl,
+@inproceedings{wilkinghoff2024self,
   author = {Wilkinghoff, Kevin},
-  title  = {Self-Supervised Learning for Anomalous Sound Detection},
-  note   = {Accepted for presentation at International Conference on Acoustics, Speech and Signal Processing (ICASSP), arXiv:2312.09578},
-  year   = {2024}
+  title = {Self-Supervised Learning for Anomalous Sound Detection},
+  booktitle = {International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year = {2024},
+  publisher={IEEE},
+  pages={276--280}
 }
