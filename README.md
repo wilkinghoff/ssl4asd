@@ -10,9 +10,11 @@ Just start the main.py script for training and evaluation. To run the code, you 
 
 Please reference the following paper when reusing (parts of) the code:
 
-@unpublished{wilkinghoff2024adaproj,
-   author = {Wilkinghoff, Kevin},
-   title = {Ada{P}roj: {A}daptively Scaled Angular Margin Subspace Projections for Anomalous Sound Detection with Auxiliary Classification Tasks},
-   note = {arXiv:2403.14179},
-   year = {2024}
+@inproceedings{wilkinghoff2024self,
+  author = {Wilkinghoff, Kevin},
+  title = {Self-Supervised Learning for Anomalous Sound Detection},
+  booktitle = {International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year = {2024},
+  publisher={IEEE},
+  pages={276--280}
 }
